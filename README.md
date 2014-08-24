@@ -1,14 +1,14 @@
 # opt
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure library for interfacing with (I)LP solvers.
 
 ## Usage
 
-FIXME
+*Don't use it - yet. :)*
 
 ## License
 
-Copyright © 2014 FIXME
+Copyright © 2014 Achim Passen
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

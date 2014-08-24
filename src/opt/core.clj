@@ -1,20 +1,13 @@
 (ns opt.core
-  (use clojure.math.numeric-tower
-       plumbing.core)
-  (import java.util.Map))
+  (:require [clojure.math.numeric-tower :as num]
+            [opt.util :as util])
+  (:use plumbing.core)
+  (:import java.util.Map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- sgnchar [x]
   (if (>= x 0) \+ \-))
-
-(defn- index-by [f coll]
-  (letfn [(step [acc x]
-            (update-in acc [(f x)] conj x))]
-    (reduce step {} coll)))
-
-(defn- index-by-unique [f coll]
-  (map-vals first (index-by f coll)))
 
 (defn- render-var [varid]
   (str "v" varid))
@@ -42,7 +35,9 @@
       (dorun
        (for [[vid coeff] vidcoeffs]
          (.append sbuilder
-                  (str " " (sgnchar coeff) " " (abs coeff) " " (render-var vid)))))
+                  (str " " (sgnchar coeff)
+                       " " (num/abs coeff)
+                       " " (render-var vid)))))
       (str sbuilder))))
 
 (defrecord AffineConstr [linear-term upper-bound]
@@ -69,7 +64,7 @@
                          (or (:<= v) (if (= :bin (:type v))
                                        1
                                        "+infinity")))))
-      (dorun (for [[sec vs] (index-by :type (vals varids->vars))]
+      (dorun (for [[sec vs] (util/index-by :type (vals varids->vars))]
                (do (add-line (vartypestr sec))
                    (apply add-line vs))))
       (add-line "End")
@@ -78,7 +73,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def ^:private make-id
-  (let [max (expt 10 15)
+  (let [max (num/expt 10 15)
         ctr (atom 0)
         nxt (fn [i] (mod (inc i) max))]
     (fn [] (swap! ctr nxt))))
@@ -91,7 +86,7 @@
   ([vars coeffs] (linear-term (zipmap vars coeffs))))
 
 (defn negate [linear-term]
-  (LinearTerm. (map-vals - (:varids->coeffs linear-term))))
+  (update-in linear-term [:varids->coeffs] #(map-vals - %)))
 
 (defn affine-constr
   ([ineq lhs rhs]
@@ -103,10 +98,10 @@
   (Problem. flavor
             objective
             (flatten constraints)
-            (index-by-unique :id vars)
+            (util/index-by-unique :id vars)
             (->> vars
                  (filter :tag)
-                 (index-by-unique :tag)
+                 (util/index-by-unique :tag)
                  (map-vals :id))
             :unattempted
             nil))
@@ -118,8 +113,8 @@
         step    (fn [acc [vid val]]
                   (update-in acc [:varids->vars vid] assoc :val val))]
     (reduce step problem varids->vals)))
-    
-  
+
+
 
 
 

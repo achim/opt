@@ -1,6 +1,7 @@
 (ns opt.core
   (use clojure.math.numeric-tower
-       plumbing.core))
+       plumbing.core)
+  (import java.util.Map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,40 +13,43 @@
             (update-in acc [(f x)] conj x))]
     (reduce step {} coll)))
 
+(defn- index-by-unique [f coll]
+  (map-vals first (index-by f coll)))
+
+(defn- render-var [varid]
+  (str "v" varid))
+
 (def ^:private flavorstr {:min "Minimize" :max "Maximize"})
 (def ^:private vartypestr {:gen "General" :bin "Binary" :int "Integer"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defprotocol HasVars
-  (vars [me]))
-
-(defrecord Var [id type >= <= tag]
+(defrecord Variable [id type >= <= tag val]
   Object ;----------
-  (toString [me] (str "x" id))
-  HasVars ;----------
-  (vars [me] me))
+  (toString [me] (render-var id))
+  clojure.lang.IDeref ;----------
+  (deref [me] val))
 
-(defrecord LinearTerm [vars-to-coeffs]
+(prefer-method print-method java.util.Map clojure.lang.IDeref)
+
+(defrecord LinearTerm [varids->coeffs]
   Object ;----------
   (toString [me]
-    (let [[[v c] & vcs] (seq vars-to-coeffs)
-          sbuilder      (StringBuilder.)]
-      (.append sbuilder (str c " " v))
+    (let [[[vid coeff]
+           & vidcoeffs] (seq varids->coeffs)
+           sbuilder     (StringBuilder.)]
+      (.append sbuilder (str coeff " " (render-var vid)))
       (dorun
-       (for [[v c] vcs]
-         (.append sbuilder (str " " (sgnchar c) " " (abs c) " " v))))
-      (str sbuilder)))
-  HasVars ;----------
-  (vars [me] (keys vars-to-coeffs)))
+       (for [[vid coeff] vidcoeffs]
+         (.append sbuilder
+                  (str " " (sgnchar coeff) " " (abs coeff) " " (render-var vid)))))
+      (str sbuilder))))
 
-(defrecord AffineConstr [linear-term lower-bound]
+(defrecord AffineConstr [linear-term upper-bound]
   Object ;----------
-  (toString [me] (str (str linear-term " >= " lower-bound)))
-  HasVars ;----------
-  (vars [me] (vars linear-term)))
+  (toString [me] (str (str linear-term " <= " upper-bound))))
 
-(defrecord Problem [flavor objective constraints vars]
+(defrecord Problem [flavor objective constraints varids->vars tags->varids status val]
   Object ;----------
   (toString [me]
     (let [sbuilder (StringBuilder.)
@@ -57,7 +61,7 @@
       (add-line "Subject To")
       (dorun (map add-line constraints))
       (add-line "Bounds")
-      (dorun (for [v vars]
+      (dorun (for [v (vals varids->vars)]
                (add-line (or (:>= v) (if (= :bin (:type v))
                                        0
                                        "-infinity"))
@@ -65,13 +69,11 @@
                          (or (:<= v) (if (= :bin (:type v))
                                        1
                                        "+infinity")))))
-      (dorun (for [[sec vs] (index-by :type vars)]
+      (dorun (for [[sec vs] (index-by :type (vals varids->vars))]
                (do (add-line (vartypestr sec))
                    (apply add-line vs))))
       (add-line "End")
-      (str sbuilder)))
-  HasVars ;----------
-  (vars [me] vars))
+      (str sbuilder))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,39 +83,61 @@
         nxt (fn [i] (mod (inc i) max))]
     (fn [] (swap! ctr nxt))))
 
-(defn make-var [& {:keys [type tag] :or {type :gen} :as args}]
-  (Var. (make-id) type (:>= args) (:<= args) tag))
+(defn variable [& {:keys [type tag] :or {type :gen} :as args}]
+  (Variable. (make-id) type (:>= args) (:<= args) tag nil))
 
 (defn linear-term
-  ([vars-to-coeffs] (LinearTerm. vars-to-coeffs))
+  ([vars->coeffs] (LinearTerm. (map-keys :id vars->coeffs)))
   ([vars coeffs] (linear-term (zipmap vars coeffs))))
 
 (defn negate [linear-term]
-  (LinearTerm. (map-vals - (:vars-to-coeffs linear-term))))
+  (LinearTerm. (map-vals - (:varids->coeffs linear-term))))
 
 (defn affine-constr
   ([ineq lhs rhs]
-     (if (= ineq :>=)
+     (if (= ineq :<=)
        (AffineConstr. lhs rhs)
        (AffineConstr. (negate lhs) (- rhs)))))
 
-(defn make-problem [flavor objective constraints]
-  (let [all-vars (reduce (partial reduce conj)
-                         (into #{} (vars objective))
-                         (map vars constraints))]
-    (Problem. flavor objective constraints all-vars)))
+(defn problem [flavor objective constraints vars]
+  (Problem. flavor
+            objective
+            (flatten constraints)
+            (index-by-unique :id vars)
+            (->> vars
+                 (filter :tag)
+                 (index-by-unique :tag)
+                 (map-vals :id))
+            :unattempted
+            nil))
+
+(defn update-problem [problem status val varids->vals]
+  (let [problem (-> problem
+                    (assoc :status status)
+                    (assoc :val val))
+        step    (fn [acc [vid val]]
+                  (update-in acc [:varids->vars vid] assoc :val val))]
+    (reduce step problem varids->vals)))
+    
+  
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #_(
 
-   (str (linear-term (repeatedly 3 make-var) [-1 -2 -3]))
+   (linear-term (repeatedly 3 variable) [-1 -2 -3])
 
    
-   (make-var)
+   (variable)
 
-   (make-var :>= 5 :<= 10 :type :int)
+   (variable :>= 5 :<= 10 :type :int)
 
-   (make-var :tag [:foo 1])
+   (variable :tag [:foo 1])
 
+   (let [vs (repeatedly 3 #(variable :type :bin))]
+     (problem :min (linear-term vs [2 4 7])
+              [(affine-constr :>= (linear-term vs [1 1 1]) 2)]
+              vs))
    )

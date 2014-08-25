@@ -1,11 +1,13 @@
 (ns opt.core
   (:require [clojure.math.numeric-tower :as num]
-            [opt.util :as util]
-            [opt.cbc :as cbc]
-            [opt.problems :as problems])
+            [opt.base :as base]
+            [opt.problems :as problems]
+            [opt.cbc :as cbc])
   (:use plumbing.core))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(prefer-method print-method java.util.Map clojure.lang.IDeref)
 
 #_(
 

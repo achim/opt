@@ -22,8 +22,6 @@
   clojure.lang.IDeref ;----------
   (deref [me] val))
 
-(prefer-method print-method java.util.Map clojure.lang.IDeref)
-
 (defrecord LinearTerm [varids->coeffs]
   Object ;----------
   (toString [me]

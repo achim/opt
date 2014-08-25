@@ -1,6 +1,6 @@
 (ns opt.cbc
   (:require [opt.util :as util]
-            [opt.types :as types]
+            [opt.base :as base]
             [clojure.string :as string]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,4 +28,4 @@
                               (let [cols (split-row r)]
                                 [(read-string (subs (cols 1) 1))
                                  (read-string (cols 2))])))]
-        (types/->SolverResult :optimal optval varids->vars)))))
+        (base/->SolverResult :optimal optval varids->vars)))))

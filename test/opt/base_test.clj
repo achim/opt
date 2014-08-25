@@ -1,6 +1,6 @@
-(ns opt.core-test
+(ns opt.base-test
   (:require [clojure.test :refer :all]
-            [opt.core :refer :all]
+            [opt.base :refer :all]
             [clojure.string :as string]))
 
 (defn nospace [s]

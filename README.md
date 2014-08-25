@@ -1,4 +1,4 @@
-# opt
+# opt ![travis-ci](https://travis-ci.org/achim/opt.svg?branch=master)
 
 A Clojure library for interfacing with (I)LP solvers.
 

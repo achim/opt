@@ -6,6 +6,8 @@ A Clojure library for interfacing with (I)LP solvers.
 
 *Don't use it - yet. :)*
 
+[![Clojars Project](http://clojars.org/org.clojars.achim/opt/latest-version.svg)](http://clojars.org/org.clojars.achim/opt)
+
 ## License
 
 Copyright © 2014 Achim Passen

@@ -1,4 +1,4 @@
-(defproject opt "0.1.0-SNAPSHOT"
+(defproject org.clojars.achim/opt "0.1.0-SNAPSHOT"
   :description "A Clojure library for interfacing with (I)LP solvers"
   :url "https://github.com/achim/opt"
   :license {:name "Eclipse Public License"

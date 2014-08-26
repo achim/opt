@@ -1,7 +1,6 @@
 (ns opt.problems
   (:require [opt.base :as b]
-            [clojure.set :as set]
-            [clojure.math.combinatorics :as comb]))
+            [clojure.set :as set]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,7 +23,9 @@
                vars)))
 
 (defn ifthen-constrs [pred a-vars b-vars]
-  (for [[a b] (comb/cartesian-product a-vars b-vars) :when ((tag-fn pred) a b)]
+  (for [a a-vars
+        b b-vars
+        :when ((tag-fn pred) a b)]
     (b/affine-constr :<= (b/linear-term [a b] [1 -1]) 0)))
 
 (defn set-system-constrs [set-vars element-vars]

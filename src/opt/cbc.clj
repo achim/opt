@@ -1,11 +1,12 @@
 (ns opt.cbc
   (:require [opt.util :as util]
             [opt.base :as base]
+            [opt.lp :as lp]
             [clojure.string :as string]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn- run-solver [lp]
+(defn run-solver [lp]
   (util/with-tempdir [dir]
     (let [in-path  (str (.resolve dir "in.lp"))
           out-path (str (.resolve dir "out.txt"))]
@@ -20,7 +21,7 @@
 
 (defn solve [problem]
   (let [[synopsis & rows] (string/split-lines
-                           (run-solver (str problem)))]
+                           (run-solver (lp/repr problem)))]
     (when (.startsWith synopsis "Optimal")
       (let [optval ((if (= (:flavor problem) :max) - +)
                     (read-string (last (split-row synopsis))))

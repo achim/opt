@@ -22,6 +22,10 @@
   clojure.lang.IDeref ;----------
   (deref [me] val))
 
+(prefer-method print-method java.util.Map clojure.lang.IDeref)
+(prefer-method print-method clojure.lang.IRecord clojure.lang.IDeref)
+
+
 (defrecord LinearTerm [varids->coeffs]
   Object ;----------
   (toString [me]
@@ -92,16 +96,17 @@
        (->AffineConstr (negate lhs) (- rhs)))))
 
 (defn problem [flavor objective constraints vars]
-  (->Problem flavor
-             objective
-             (flatten constraints)
-             (util/index-by-unique :id vars)
-             (->> vars
-                  (filter :tag)
-                  (util/index-by-unique :tag)
-                  (map-vals :id))
-             :unattempted
-             nil))
+  (let [vars (flatten vars)]
+    (->Problem flavor
+               objective
+               (flatten constraints)
+               (util/index-by-unique :id vars)
+               (->> vars
+                    (filter :tag)
+                    (util/index-by-unique :tag)
+                    (map-vals :id))
+               :unattempted
+               nil)))
 
 (defn update-problem [problem solver]
   (let [result       (solver problem)

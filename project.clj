@@ -11,4 +11,6 @@
                  [org.clojure/math.numeric-tower "0.0.4"]
                  [org.clojure/math.combinatorics "0.0.8"]
                  [prismatic/plumbing "0.3.3"]
-                 [commons-io "2.4"]])
+                 [commons-io "2.4"]]
+  :native-path "/Library/gurobi563/mac64/lib/"
+  :classpath-add "/Library/gurobi563/mac64/lib/gurobi.jar")

@@ -1,8 +1,8 @@
-(ns opt.lp
+(ns opt.formats.lp
+  (:import (opt.core LinearExpr AffineConstr Problem Variable))
   (:require [clojure.math.numeric-tower :as num]
             [opt.util :as util]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- sgnchar [x]
   (if (>= x 0) \+ \-))
@@ -10,18 +10,22 @@
 (defn- render-var [varid]
   (str "v" varid))
 
-(def ^:private flavorstr {:min "Minimize" :max "Maximize"})
-(def ^:private vartypestr {:gen "General" :bin "Binary" :int "Integer"})
+(def ^:private sensestr {:min "Minimize"
+                          :max "Maximize"})
+(def ^:private vartypestr {:gen  "General"
+                           :bin  "Binary"
+                           :int  "Integer"
+                           :semi "Semi-Continuous"})
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defprotocol LpFormat
   (repr [me]))
 
 (extend-protocol LpFormat
-  opt.base.Variable ;----------
-  (repr [me] (render-var (:id me)))
-  opt.base.LinearTerm ;----------
+  Variable ;----------
+  (repr [me]
+    (render-var (:id me)))
+  LinearExpr ;----------
   (repr [me]
     (let [[[vid coeff]
            & vidcoeffs] (seq (:varids->coeffs me))
@@ -34,15 +38,18 @@
                        " " (num/abs coeff)
                        " " (render-var vid)))))
       (str sbuilder)))
-  opt.base.AffineConstr ;----------
-  (repr [me] (str (repr (:linear-term me)) " <= " (:upper-bound me)))
-  opt.base.Problem ;----------
+  AffineConstr ;----------
+  (repr [me]
+    (str (repr (:linear-expr me))
+         " " (name (:sense me))
+         " " (:bound me)))
+  Problem ;----------
   (repr [me]
     (let [sbuilder (StringBuilder.)
           add-line (fn [& vals]
                      (.append sbuilder (apply str (interpose " " vals)))
                      (.append sbuilder "\n"))]
-      (add-line (flavorstr (:flavor me)))
+      (add-line (sensestr (:sense me)))
       (add-line (repr (:objective me)))
       (add-line "Subject To")
       (dorun (map #(add-line (repr %)) (:constraints me)))

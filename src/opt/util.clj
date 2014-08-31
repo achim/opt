@@ -1,10 +1,11 @@
 (ns opt.util
   (:use plumbing.core)
-  (:import [java.nio.file Files]
+  (:import [java.nio.file Files Path]
            [java.nio.file.attribute FileAttribute]
-           [org.apache.commons.io FileUtils]))
+           [org.apache.commons.io FileUtils]
+           (java.util List)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (defn index-by [f coll]
   (letfn [(step [acc x]
@@ -15,7 +16,7 @@
   (map-vals first (index-by f coll)))
 
 (defn run-external [& args]
-  (let [procbuilder (doto (ProcessBuilder. args)
+  (let [procbuilder (doto (ProcessBuilder. ^List args)
                       (.inheritIO))]
     (.waitFor (.start procbuilder))))
     

@@ -1,16 +1,18 @@
-(ns opt.base-test
+(ns opt.core-test
   (:require [clojure.test :refer :all]
-            [opt.base :refer :all]
-            [opt.lp :as lp]
+            [opt.core :refer :all]
+            [opt.formats.lp :as lp]
             [clojure.string :as string]))
+
+
 
 (defn nospace [s]
   (string/replace s #"\s" ""))
 
 (deftest test-linear-terms
-  (let [v1 (assoc (variable) :id 1)
-        v2 (assoc (variable) :id 2)
-        lt (linear-term [v1 v2] [3 -7])]
+  (let [v1 (assoc (ovar) :id 1)
+        v2 (assoc (ovar) :id 2)
+        lt (linear-expr [v1 v2] [3 -7])]
     (testing "can construct linear terms"
       (let [s (nospace (lp/repr lt))]
         (is (= (count (re-seq #"-" s)) 1))
@@ -29,16 +31,18 @@
                  (<= (count s) 8)))))))
 
 (deftest test-affine-constrs
-  (let [v1 (assoc (variable) :id 1)
-        v2 (assoc (variable) :id 2)
-        lt (linear-term [v1 v2] [3 -7])
+  (let [v1 (assoc (ovar) :id 1)
+        v2 (assoc (ovar) :id 2)
+        lt (linear-expr [v1 v2] [3 -7])
         a1 (nospace (lp/repr (affine-constr :<= lt 123)))
         a2 (nospace (lp/repr (affine-constr :>= lt 456)))]
     (testing "<= constraints work"
       (is (.contains a1 "<=123"))
       (is (.contains a1 "-7v2")))
     (testing ">= constraints work"
-      (is (.contains a2 "<=-456"))
-      (is (.contains a2 "-3v1")))))
+      (is (.contains a2 ">=456"))
+      (is (.contains a2 "3v1")))))
 
-         
+(deftest test-ovar
+  (testing "semi needs bounds"
+    (is (thrown? AssertionError (ovar :type :semi)))))
